@@ -1,4 +1,3 @@
-// contentScript.js
 console.log("✅ content script loaded on this tab", location.href);
 
 (function () {
@@ -35,8 +34,11 @@ console.log("✅ content script loaded on this tab", location.href);
             const key = (item.k || '').toLowerCase();
             const val = item.v || '';
             nodes.forEach(node => {
-                if (matchesKeyword(node, key)) {
-                    console.log('Matched node:', node, 'with key:', key, 'val:', val);
+                if (matchesKeyword(node, key) && node.value.trim() === '') {  // Skip nếu đã có giá trị
+                    chrome.storage.local.get(['debugMode'], res => {
+                        const debug = res.debugMode || false;
+                        if (debug) console.debug('Matched node:', node, 'with key:', key, 'val: [hidden]');
+                    });
                     try {
                         if (node.tagName.toLowerCase() === 'select') {
                             node.value = val;
@@ -49,6 +51,8 @@ console.log("✅ content script loaded on this tab", location.href);
                                 if (node.value && node.value.toLowerCase() === val.toLowerCase()) node.checked = true;
                             }
                             node.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else if (node.type === 'date') {
+                            node.valueAsDate = new Date(val);  // Xử lý date picker
                         } else {
                             node.focus();
                             node.value = val;
@@ -81,21 +85,24 @@ console.log("✅ content script loaded on this tab", location.href);
         } catch (e) { }
         // combine and check
         const combined = attrs.join(' ').toLowerCase();
-        return combined.includes(keyword.toLowerCase());
+        return new RegExp('\\b' + keyword.toLowerCase() + '\\b', 'i').test(combined);  // Word boundary cho strict match
     }
 
     // optional: observe DOM changes for SPAs and fill when new forms appear (respect auto-fill)
-    const mo = new MutationObserver((mutations) => {
-        // simple debounce
-        if (window.__kff_mo_timeout) clearTimeout(window.__kff_mo_timeout);
-        window.__kff_mo_timeout = setTimeout(() => {
-            chrome.storage.local.get(['kff_state'], res => {
-                const st = res.kff_state || {};
-                if (st.autoFill && st.activeProfileId && st.profiles && st.profiles[st.activeProfileId]) {
-                    fillUsingItems(st.profiles[st.activeProfileId].items);
-                }
-            });
-        }, 400);
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        const mo = new MutationObserver((mutations) => {
+            // simple debounce
+            if (window.__kff_mo_timeout) clearTimeout(window.__kff_mo_timeout);
+            window.__kff_mo_timeout = setTimeout(() => {
+                chrome.storage.local.get(['kff_state'], res => {
+                    const st = res.kff_state || {};
+                    if (st.autoFill && st.activeProfileId && st.profiles && st.profiles[st.activeProfileId]) {
+                        fillUsingItems(st.profiles[st.activeProfileId].items);
+                    }
+                });
+            }, 500);  // Tăng debounce lên 500ms
+        });
+        mo.observe(form, { childList: true, subtree: true });
     });
-    mo.observe(document.body || document.documentElement, { childList: true, subtree: true });
 })();

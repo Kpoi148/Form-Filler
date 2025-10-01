@@ -16,6 +16,7 @@ const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importFile = document.getElementById('importFile');
 const status = document.getElementById('status');
+// Thêm: const renameProfileBtn = document.getElementById('renameProfileBtn'); (thêm button vào HTML nếu cần)
 
 let state = {
     profiles: {},       // id -> {name, items:[{k,v}]}
@@ -82,32 +83,30 @@ function renderKeywords() {
                     </td>`;
         kwTableBody.appendChild(tr);
     });
-
-    // attach events
-    kwTableBody.querySelectorAll('.save-row').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const idx = e.target.dataset.idx;
-            const k = kwTableBody.querySelector(`.kw-key[data-idx="${idx}"]`).value.trim();
-            const v = kwTableBody.querySelector(`.kw-val[data-idx="${idx}"]`).value;
-            state.profiles[state.activeProfileId].items[idx] = { k, v };
-            saveState();
-            renderKeywords();
-        });
-    });
-    kwTableBody.querySelectorAll('.del-row').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const idx = Number(e.target.dataset.idx);
-            state.profiles[state.activeProfileId].items.splice(idx, 1);
-            saveState();
-            renderKeywords();
-        });
-    });
 }
+
+kwTableBody.addEventListener('click', (e) => {
+    if (e.target.classList.contains('save-row')) {
+        const idx = e.target.dataset.idx;
+        const k = kwTableBody.querySelector(`.kw-key[data-idx="${idx}"]`).value.trim();
+        const v = kwTableBody.querySelector(`.kw-val[data-idx="${idx}"]`).value;
+        state.profiles[state.activeProfileId].items[idx] = { k, v };
+        saveState();
+        renderKeywords();
+    } else if (e.target.classList.contains('del-row')) {
+        const idx = Number(e.target.dataset.idx);
+        state.profiles[state.activeProfileId].items.splice(idx, 1);
+        saveState();
+        renderKeywords();
+    }
+});
 
 addBtn.addEventListener('click', () => {
     const k = kwInput.value.trim();
     const v = valInput.value;
+    const prof = state.profiles[state.activeProfileId];
     if (!k) { showStatus('Keyword rỗng'); return; }
+    if (prof.items.some(it => it.k === k)) { showStatus('Keyword trùng'); return; }
     state.profiles[state.activeProfileId].items.push({ k, v });
     kwInput.value = ''; valInput.value = '';
     saveState();
@@ -178,18 +177,32 @@ importFile.addEventListener('change', (e) => {
         try {
             const parsed = JSON.parse(reader.result);
             // basic validation
-            if (parsed && parsed.profiles) {
-                state = parsed;
-                saveState();
-                renderAll();
-                showStatus('Import thành công');
-            } else showStatus('File không hợp lệ');
-        } catch (err) { showStatus('Import lỗi'); }
+            if (!parsed || !parsed.profiles || typeof parsed.profiles !== 'object') {
+                throw new Error('Invalid structure');
+            }
+            Object.values(parsed.profiles).forEach(p => {
+                if (!Array.isArray(p.items)) throw new Error('Invalid items');
+            });
+            state = parsed;
+            saveState();
+            renderAll();
+            showStatus('Import thành công');
+        } catch (err) { showStatus('Import lỗi: ' + err.message); }
     };
     reader.readAsText(f);
 });
 
 // helper: escape for input value injection
-function escapeHtml(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+function escapeHtml(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;'); }
+
+// Thêm rename nếu có button trong HTML
+// renameProfileBtn.addEventListener('click', () => {
+//     const newName = prompt('Tên mới:', state.profiles[state.activeProfileId].name);
+//     if (newName) {
+//         state.profiles[state.activeProfileId].name = newName;
+//         saveState();
+//         renderAll();
+//     }
+// });
 
 document.addEventListener('DOMContentLoaded', loadState);
