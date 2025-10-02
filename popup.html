@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="vi">
 
 <head>
     <meta charset="utf-8" />
@@ -12,13 +12,17 @@
 <body>
     <div class="container">
         <h2>Keyword Form Filler</h2>
+
+        <!-- Profile controls -->
         <div class="row">
-            <label>Profile:
-                <select id="profileSelect"></select>
-            </label>
+            <label for="profileSelect">Profile:</label>
+            <select id="profileSelect"></select>
             <button id="newProfileBtn" class="btn btn-primary">New</button>
+            <button id="renameProfileBtn" class="btn btn-secondary">Rename</button>
             <button id="deleteProfileBtn" class="btn btn-danger">Delete</button>
         </div>
+
+        <!-- Keywords table -->
         <table id="kwTable">
             <thead>
                 <tr>
@@ -29,6 +33,8 @@
             </thead>
             <tbody></tbody>
         </table>
+
+        <!-- Add new keyword row -->
         <div class="row" id="addRow">
             <input id="kwInput" placeholder="keyword (ex: email)" />
             <input id="valInput" placeholder="value (ex: a@b.com)" />
@@ -36,18 +42,36 @@
                 <button id="addBtn" class="btn btn-primary save-row">Add</button>
             </div>
         </div>
+
+        <!-- Action buttons -->
         <div class="button-row">
             <button id="fillBtn" class="btn btn-primary">Fill on current tab</button>
-            <button id="autoFillToggle" class="btn btn-toggle">Toggle Auto-Fill (Off)</button>
+
+            <!-- Auto-fill switch -->
+            <label class="switch">
+                <input type="checkbox" id="autoFillToggle" />
+                <span class="slider"></span>
+                <span class="switch-label">Auto-Fill</span>
+            </label>
         </div>
+
         <div class="button-row">
             <button id="exportBtn" class="btn btn-secondary">Export</button>
             <button id="importBtn" class="btn btn-secondary">Import</button>
             <input type="file" id="importFile" style="display:none" accept=".json" />
         </div>
-        <div id="status" class="status"></div>
-        <footer class="footer">Phát triển bởi Kpoi148 - 2025</footer>
+
+        <!-- Status messages -->
+        <div id="status" class="status" role="alert"></div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            Phát triển bởi
+            <a href="https://github.com/Kpoi148" target="_blank" rel="noopener noreferrer">Kpoi148</a>
+            - 2025
+        </footer>
     </div>
+
     <script src="popup.js"></script>
 </body>
 
