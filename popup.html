@@ -11,6 +11,8 @@
 
 <body>
     <div class="container">
+        <button id="closeBtn" aria-label="Close popup"
+            style="position: absolute; top: 10px; right: 10px; cursor: pointer; background: none; border: none; font-size: 20px;">✕</button>
         <h2>Keyword Form Filler</h2>
 
         <!-- Profile controls -->
@@ -22,22 +24,27 @@
             <button id="deleteProfileBtn" class="btn btn-danger">Delete</button>
         </div>
 
-        <!-- Keywords table -->
-        <table id="kwTable">
-            <thead>
-                <tr>
-                    <th>Keyword</th>
-                    <th>Value</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <!-- Keywords table with accordion -->
+        <details>
+            <summary>Keywords List (Click to expand)</summary>
+            <table id="kwTable">
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th>Value</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </details>
 
         <!-- Add new keyword row -->
         <div class="row" id="addRow">
-            <input id="kwInput" placeholder="keyword (ex: email)" />
-            <input id="valInput" placeholder="value (ex: a@b.com)" />
+            <input id="kwInput" placeholder="keyword (ex: email)"
+                title="Keyword: Từ khóa khớp với form (ví dụ: email)" />
+            <input id="valInput" placeholder="value (ex: a@b.com)"
+                title="Value: Giá trị để điền vào form (ví dụ: a@b.com)" />
             <div class="actions">
                 <button id="addBtn" class="btn btn-primary save-row">Add</button>
             </div>
@@ -46,6 +53,7 @@
         <!-- Action buttons -->
         <div class="button-row">
             <button id="fillBtn" class="btn btn-primary">Fill on current tab</button>
+            <button id="previewBtn" class="btn btn-secondary">Preview</button>
 
             <!-- Auto-fill switch -->
             <label class="switch">

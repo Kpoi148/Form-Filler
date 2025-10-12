@@ -192,6 +192,35 @@ importFile.addEventListener('change', (e) => {
     reader.readAsText(f);
 });
 
+const viewToggle = document.createElement('button');
+viewToggle.textContent = 'Switch to Advanced View';
+viewToggle.addEventListener('click', () => {
+    document.querySelector('#kwTable').classList.toggle('hidden');
+    viewToggle.textContent = document.querySelector('#kwTable').classList.contains('hidden') ? 'Switch to Advanced View' : 'Switch to Simple View';
+});
+document.querySelector('.container').appendChild(viewToggle);
+
+
+document.getElementById('closeBtn').addEventListener('click', () => window.close());
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') window.close();
+    if (e.key === 'Enter' && document.activeElement === addBtn) addBtn.click();
+});
+
+document.getElementById('previewBtn').addEventListener('click', () => {
+    const modal = document.createElement('div');
+    modal.style = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);';
+    modal.innerHTML = '<div style="background: white; padding: 20px;">Preview: Điền email vào field email...</div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click', () => modal.remove());
+});
+
+chrome.storage.local.get(['onboarded'], res => {
+    if (!res.onboarded) {
+        alert('Welcome! 1. Chọn profile, 2. Add keyword, 3. Fill on tab. Pin extension để dễ dùng!');
+        chrome.storage.local.set({ onboarded: true });
+    }
+});
 // helper: escape for input value injection
 function escapeHtml(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;'); }
 
