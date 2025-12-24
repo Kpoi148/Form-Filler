@@ -21,7 +21,7 @@ Chrome extension to fill forms using user-defined keywords and profiles.
 1) Open `chrome://extensions`
 2) Enable Developer mode
 3) Click "Load unpacked"
-4) Select the project folder `e:\JS\Form-Filler`
+4) Select the project folder `Form-Filler`
 
 ## Usage
 1) Open the extension popup
