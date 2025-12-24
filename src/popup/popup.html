@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Keyword Form Filler</title>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600&display=swap" />
+    <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="title-block">
+                <span class="eyebrow">Auto Fill Toolkit</span>
+                <h2>Keyword Form Filler</h2>
+                <p class="subtitle">Quản lý profile và điền form nhanh gọn.</p>
+            </div>
+            <button id="closeBtn" class="icon-btn" aria-label="Close popup">✕</button>
+        </header>
+
+        <!-- Profile controls -->
+        <section class="section" style="--delay: 0.05s;">
+            <div class="section-title">Profile</div>
+            <div class="row profile-row">
+                <label for="profileSelect">Profile</label>
+                <select id="profileSelect"></select>
+            </div>
+            <div class="row profile-actions">
+                <button id="newProfileBtn" class="btn btn-primary">New</button>
+                <button id="renameProfileBtn" class="btn btn-secondary">Rename</button>
+                <button id="deleteProfileBtn" class="btn btn-danger">Delete</button>
+            </div>
+        </section>
+
+        <!-- Keywords table with accordion -->
+        <section class="section" style="--delay: 0.1s;">
+            <div class="section-title">Keywords</div>
+            <details class="panel" open>
+                <summary>Danh sách từ khóa</summary>
+                <table id="kwTable">
+                    <thead>
+                        <tr>
+                            <th>Keyword</th>
+                            <th>Value</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </details>
+            <div id="viewToggleSlot" class="view-toggle-slot"></div>
+        </section>
+
+        <!-- Add new keyword row -->
+        <section class="section" style="--delay: 0.15s;">
+            <div class="section-title">Quick Add</div>
+            <div class="row" id="addRow">
+                <input id="kwInput" type="text" placeholder="keyword (ex: email)"
+                    title="Keyword: Từ khóa khớp với form (ví dụ: email)" />
+                <input id="valInput" type="text" placeholder="value (ex: a@b.com)"
+                    title="Value: Giá trị để điền vào form (ví dụ: a@b.com)" />
+                <button id="addBtn" class="btn btn-primary">Add</button>
+            </div>
+        </section>
+
+        <!-- Action buttons -->
+        <section class="section" style="--delay: 0.2s;">
+            <div class="section-title">Actions</div>
+            <div class="button-row">
+                <button id="fillBtn" class="btn btn-primary">Fill current tab</button>
+                <button id="previewBtn" class="btn btn-secondary">Preview</button>
+                <!-- Auto-fill switch -->
+                <label class="switch">
+                    <input type="checkbox" id="autoFillToggle" />
+                    <span class="slider"></span>
+                    <span id="autoFillLabel" class="switch-label">Auto-Fill</span>
+                </label>
+            </div>
+        </section>
+
+        <section class="section" style="--delay: 0.25s;">
+            <div class="section-title">Data</div>
+            <div class="button-row">
+                <button id="exportBtn" class="btn btn-secondary">Export</button>
+                <button id="importBtn" class="btn btn-secondary">Import</button>
+                <input type="file" id="importFile" style="display:none" accept=".json" />
+            </div>
+        </section>
+
+        <!-- Status messages -->
+        <div id="status" class="status" role="alert"></div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            Phát triển bởi
+            <a href="https://github.com/Kpoi148" target="_blank" rel="noopener noreferrer">Kpoi148</a>
+            - 2025
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

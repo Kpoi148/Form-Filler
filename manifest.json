@@ -13,7 +13,7 @@
         "<all_urls>"
     ],
     "action": {
-        "default_popup": "popup.html",
+        "default_popup": "src/popup/popup.html",
         "default_icon": {
             "16": "icons/form.png",
             "48": "icons/form.png",
@@ -21,7 +21,7 @@
         }
     },
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "src/background/background.js"
     },
     "content_scripts": [
         {
@@ -29,7 +29,7 @@
                 "<all_urls>"
             ],
             "js": [
-                "contentScript.js"
+                "src/content/contentScript.js"
             ],
             "run_at": "document_idle"
         }

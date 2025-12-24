@@ -10,13 +10,14 @@ const valInput = document.getElementById('valInput');
 const addBtn = document.getElementById('addBtn');
 const fillBtn = document.getElementById('fillBtn');
 const newProfileBtn = document.getElementById('newProfileBtn');
+const renameProfileBtn = document.getElementById('renameProfileBtn');
 const deleteProfileBtn = document.getElementById('deleteProfileBtn');
 const autoFillToggle = document.getElementById('autoFillToggle');
+const autoFillLabel = document.getElementById('autoFillLabel');
 const exportBtn = document.getElementById('exportBtn');
 const importBtn = document.getElementById('importBtn');
 const importFile = document.getElementById('importFile');
 const status = document.getElementById('status');
-// Thêm: const renameProfileBtn = document.getElementById('renameProfileBtn'); (thêm button vào HTML nếu cần)
 
 let state = {
     profiles: {},       // id -> {name, items:[{k,v}]}
@@ -66,8 +67,15 @@ function renderAll() {
     }
     profileSelect.value = state.activeProfileId;
     renderKeywords();
-    autoFillToggle.textContent = `Toggle Auto-Fill (${state.autoFill ? 'On' : 'Off'})`;
-    autoFillToggle.classList.toggle('on', state.autoFill); // Thêm class cho màu
+    updateAutoFillUI();
+}
+
+function updateAutoFillUI() {
+    autoFillToggle.checked = !!state.autoFill;
+    autoFillToggle.setAttribute('aria-checked', String(!!state.autoFill));
+    if (autoFillLabel) {
+        autoFillLabel.textContent = state.autoFill ? 'Auto-Fill: Bật' : 'Auto-Fill: Tắt';
+    }
 }
 
 function renderKeywords() {
@@ -78,8 +86,8 @@ function renderKeywords() {
         tr.innerHTML = `<td><input data-idx="${idx}" class="kw-key" value="${escapeHtml(it.k)}"></td>
                     <td><input data-idx="${idx}" class="kw-val" value="${escapeHtml(it.v)}"></td>
                     <td class="actions">
-                      <button class="save-row" data-idx="${idx}">Save</button>
-                      <button class="del-row" data-idx="${idx}">Del</button>
+                      <button class="btn btn-xs btn-secondary save-row" data-idx="${idx}">Save</button>
+                      <button class="btn btn-xs btn-danger del-row" data-idx="${idx}">Del</button>
                     </td>`;
         kwTableBody.appendChild(tr);
     });
@@ -129,6 +137,18 @@ newProfileBtn.addEventListener('click', () => {
     renderAll();
 });
 
+if (renameProfileBtn) {
+    renameProfileBtn.addEventListener('click', () => {
+        const current = state.profiles[state.activeProfileId];
+        if (!current) return;
+        const newName = prompt('Tên mới:', current.name);
+        if (!newName) return;
+        current.name = newName;
+        saveState();
+        renderAll();
+    });
+}
+
 deleteProfileBtn.addEventListener('click', () => {
     if (!confirm('Xác nhận xóa profile này?')) return;
     delete state.profiles[state.activeProfileId];
@@ -152,11 +172,10 @@ fillBtn.addEventListener('click', () => {
     });
 });
 
-autoFillToggle.addEventListener('click', () => {
-    state.autoFill = !state.autoFill;
+autoFillToggle.addEventListener('change', () => {
+    state.autoFill = autoFillToggle.checked;
     saveState();
-    autoFillToggle.textContent = `Toggle Auto-Fill (${state.autoFill ? 'On' : 'Off'})`;
-    autoFillToggle.classList.toggle('on', state.autoFill);
+    updateAutoFillUI();
 });
 
 exportBtn.addEventListener('click', () => {
@@ -193,12 +212,15 @@ importFile.addEventListener('change', (e) => {
 });
 
 const viewToggle = document.createElement('button');
+viewToggle.type = 'button';
+viewToggle.className = 'btn btn-ghost view-toggle';
 viewToggle.textContent = 'Switch to Advanced View';
 viewToggle.addEventListener('click', () => {
     document.querySelector('#kwTable').classList.toggle('hidden');
     viewToggle.textContent = document.querySelector('#kwTable').classList.contains('hidden') ? 'Switch to Advanced View' : 'Switch to Simple View';
 });
-document.querySelector('.container').appendChild(viewToggle);
+const viewToggleSlot = document.getElementById('viewToggleSlot');
+(viewToggleSlot || document.querySelector('.container')).appendChild(viewToggle);
 
 
 document.getElementById('closeBtn').addEventListener('click', () => window.close());
@@ -223,15 +245,5 @@ chrome.storage.local.get(['onboarded'], res => {
 });
 // helper: escape for input value injection
 function escapeHtml(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;'); }
-
-// Thêm rename nếu có button trong HTML
-// renameProfileBtn.addEventListener('click', () => {
-//     const newName = prompt('Tên mới:', state.profiles[state.activeProfileId].name);
-//     if (newName) {
-//         state.profiles[state.activeProfileId].name = newName;
-//         saveState();
-//         renderAll();
-//     }
-// });
 
 document.addEventListener('DOMContentLoaded', loadState);
