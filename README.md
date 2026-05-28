@@ -41,6 +41,8 @@
 ## 📝 Lưu ý
 - Tính năng tự động điền chỉ hoạt động khi content script được phép chạy trên trang đó.
 - Tiện ích sẽ bỏ qua các trường (input) đã có sẵn dữ liệu để tránh ghi đè thông tin quan trọng.
+- Extension chỉ yêu cầu quyền `storage` để lưu profile. Content script được khai báo trên `<all_urls>` để hỗ trợ Fill current tab và Auto-Fill trên các website thông thường.
+- Chrome không cho content script chạy trên một số trang nội bộ hoặc trang đặc biệt như `chrome://`, Chrome Web Store, file cục bộ chưa được cấp quyền, hoặc các trang bị chính sách trình duyệt chặn inject.
 
 ## 📄 Giấy phép & Bản quyền
 Dự án được phát hành dưới giấy phép **MIT**. Xem tệp [LICENSE](LICENSE) để biết thêm chi tiết.

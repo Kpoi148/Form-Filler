@@ -35,7 +35,7 @@ html {
 }
 
 body {
-    font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
     width: var(--popup-width);
     min-width: var(--popup-width);
     max-width: var(--popup-width);
@@ -112,7 +112,7 @@ h2 {
     margin: 0;
     font-size: 22px;
     font-weight: 600;
-    font-family: 'Fraunces', 'Times New Roman', serif;
+    font-family: Georgia, 'Times New Roman', serif;
 }
 
 .subtitle {
