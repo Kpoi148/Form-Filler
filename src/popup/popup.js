@@ -27,6 +27,100 @@ let state = {
 
 function uid() { return 'p_' + Math.random().toString(36).slice(2, 9); }
 
+function createDefaultState() {
+    const id = uid();
+    return {
+        profiles: {
+            [id]: { name: 'default', items: [] }
+        },
+        activeProfileId: id,
+        autoFill: false
+    };
+}
+
+function normalizeState(rawState, options = {}) {
+    const strict = !!options.strict;
+
+    if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) {
+        if (strict) throw new Error('Invalid root structure');
+        return createDefaultState();
+    }
+
+    const rawProfiles = rawState.profiles;
+    if (!rawProfiles || typeof rawProfiles !== 'object' || Array.isArray(rawProfiles)) {
+        if (strict) throw new Error('Invalid profiles structure');
+        return createDefaultState();
+    }
+
+    const profiles = {};
+    Object.keys(rawProfiles).forEach(id => {
+        const profile = rawProfiles[id];
+        if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+            if (strict) throw new Error(`Invalid profile: ${id}`);
+            return;
+        }
+
+        if (typeof profile.name !== 'string' || !profile.name.trim()) {
+            if (strict) throw new Error(`Invalid profile name: ${id}`);
+            return;
+        }
+
+        if (!Array.isArray(profile.items)) {
+            if (strict) throw new Error(`Invalid items: ${profile.name}`);
+            return;
+        }
+
+        const seenKeywords = new Set();
+        const items = [];
+        profile.items.forEach((item, index) => {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                if (strict) throw new Error(`Invalid item in ${profile.name} at ${index + 1}`);
+                return;
+            }
+
+            if (typeof item.k !== 'string' || typeof item.v !== 'string') {
+                if (strict) throw new Error(`Invalid keyword/value in ${profile.name} at ${index + 1}`);
+                return;
+            }
+
+            const k = item.k.trim();
+            if (!k) {
+                if (strict) throw new Error(`Empty keyword in ${profile.name} at ${index + 1}`);
+                return;
+            }
+
+            if (seenKeywords.has(k)) {
+                if (strict) throw new Error(`Duplicate keyword "${k}" in ${profile.name}`);
+                return;
+            }
+
+            seenKeywords.add(k);
+            items.push({ k, v: item.v });
+        });
+
+        profiles[id] = {
+            name: profile.name.trim(),
+            items
+        };
+    });
+
+    const profileIds = Object.keys(profiles);
+    if (profileIds.length === 0) {
+        if (strict) throw new Error('No valid profiles found');
+        return createDefaultState();
+    }
+
+    const activeProfileId = typeof rawState.activeProfileId === 'string' && profiles[rawState.activeProfileId]
+        ? rawState.activeProfileId
+        : profileIds[0];
+
+    return {
+        profiles,
+        activeProfileId,
+        autoFill: rawState.autoFill === true
+    };
+}
+
 function showStatus(msg, timeout = 2500) {
     status.style.opacity = 0;
     status.textContent = msg;
@@ -40,15 +134,8 @@ function saveState() {
 
 function loadState() {
     chrome.storage.local.get(['kff_state'], res => {
-        if (res.kff_state) {
-            state = res.kff_state;
-        } else {
-            // init default profile
-            const id = uid();
-            state.profiles[id] = { name: 'default', items: [] };
-            state.activeProfileId = id;
-            chrome.storage.local.set({ kff_state: state });
-        }
+        state = normalizeState(res.kff_state);
+        chrome.storage.local.set({ kff_state: state });
         renderAll();
     });
 }
@@ -225,18 +312,12 @@ importFile.addEventListener('change', (e) => {
     reader.onload = () => {
         try {
             const parsed = JSON.parse(reader.result);
-            // basic validation
-            if (!parsed || !parsed.profiles || typeof parsed.profiles !== 'object') {
-                throw new Error('Invalid structure');
-            }
-            Object.values(parsed.profiles).forEach(p => {
-                if (!Array.isArray(p.items)) throw new Error('Invalid items');
-            });
-            state = parsed;
+            state = normalizeState(parsed, { strict: true });
             saveState();
             renderAll();
             showStatus('Import thành công');
         } catch (err) { showStatus('Import lỗi: ' + err.message); }
+        importFile.value = '';
     };
     reader.readAsText(f);
 });
