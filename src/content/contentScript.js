@@ -1,5 +1,3 @@
-console.log("✅ content script loaded on this tab", location.href);
-
 (function () {
     // Listen fill requests
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -33,7 +31,7 @@ console.log("✅ content script loaded on this tab", location.href);
             const key = (item.k || '').toLowerCase();
             const val = item.v || '';
             nodes.forEach(node => {
-                if (matchesKeyword(node, key) && node.value.trim() === '') {  // Skip nếu đã có giá trị
+                if (matchesKeyword(node, key) && canFillNode(node)) {
                     chrome.storage.local.get(['debugMode'], res => {
                         const debug = res.debugMode || false;
                         if (debug) console.debug('Matched node:', node, 'with key:', key, 'val: [hidden]');
@@ -51,7 +49,12 @@ console.log("✅ content script loaded on this tab", location.href);
                             }
                             node.dispatchEvent(new Event('change', { bubbles: true }));
                         } else if (node.type === 'date') {
-                            node.valueAsDate = new Date(val);  // Xử lý date picker
+                            const date = new Date(val);
+                            if (!Number.isNaN(date.getTime())) {
+                                node.valueAsDate = date;
+                                node.dispatchEvent(new Event('input', { bubbles: true }));
+                                node.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
                         } else {
                             node.focus();
                             node.value = val;
@@ -64,8 +67,26 @@ console.log("✅ content script loaded on this tab", location.href);
         });
     }
 
+    function canFillNode(node) {
+        if (node.disabled || node.readOnly) return false;
+
+        if (node.type === 'checkbox' || node.type === 'radio') {
+            return !node.checked;
+        }
+
+        return !node.value || node.value.trim() === '';
+    }
+
     function escapeRegExp(value) {
         return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function escapeCssIdentifier(value) {
+        if (window.CSS && typeof window.CSS.escape === 'function') {
+            return window.CSS.escape(value);
+        }
+
+        return value.replace(/["\\]/g, '\\$&');
     }
 
     function matchesKeyword(node, keyword) {
@@ -80,7 +101,7 @@ console.log("✅ content script loaded on this tab", location.href);
         try {
             const id = node.id;
             if (id) {
-                const lab = document.querySelector('label[for="' + id + '"]');
+                const lab = document.querySelector('label[for="' + escapeCssIdentifier(id) + '"]');
                 if (lab) attrs.push(lab.innerText);
             }
             // also check parent label
