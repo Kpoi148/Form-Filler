@@ -8,7 +8,6 @@ console.log("✅ content script loaded on this tab", location.href);
                 const state = res.kff_state || {};
                 const profile = state.profiles && state.profiles[msg.profileId];
                 if (profile) {
-                    console.log('Filling with items:', profile.items);
                     fillUsingItems(profile.items);
                     sendResponse({ ok: true });
                 } else sendResponse({ ok: false, reason: 'no-profile' });
@@ -65,7 +64,12 @@ console.log("✅ content script loaded on this tab", location.href);
         });
     }
 
+    function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
     function matchesKeyword(node, keyword) {
+        if (!keyword) return false;
         const attrs = [];
         if (node.name) attrs.push(node.name);
         if (node.id) attrs.push(node.id);
@@ -85,7 +89,7 @@ console.log("✅ content script loaded on this tab", location.href);
         } catch (e) { }
         // combine and check
         const combined = attrs.join(' ').toLowerCase();
-        return new RegExp('\\b' + keyword.toLowerCase() + '\\b', 'i').test(combined);  // Word boundary cho strict match
+        return new RegExp('\\b' + escapeRegExp(keyword.toLowerCase()) + '\\b', 'i').test(combined);  // Word boundary cho strict match
     }
 
     // optional: observe DOM changes for SPAs and fill when new forms appear (respect auto-fill)

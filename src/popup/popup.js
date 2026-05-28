@@ -150,9 +150,13 @@ if (renameProfileBtn) {
 }
 
 deleteProfileBtn.addEventListener('click', () => {
+    if (Object.keys(state.profiles).length <= 1) {
+        showStatus('Không thể xóa profile cuối cùng');
+        return;
+    }
     if (!confirm('Xác nhận xóa profile này?')) return;
     delete state.profiles[state.activeProfileId];
-    state.activeProfileId = Object.keys(state.profiles)[0] || null;
+    state.activeProfileId = Object.keys(state.profiles)[0];
     saveState();
     renderAll();
 });
