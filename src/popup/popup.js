@@ -55,7 +55,7 @@ function loadState() {
 
 function renderAll() {
     // profiles
-    profileSelect.innerHTML = '';
+    profileSelect.replaceChildren();
     for (const id in state.profiles) {
         const opt = document.createElement('option');
         opt.value = id;
@@ -80,15 +80,41 @@ function updateAutoFillUI() {
 
 function renderKeywords() {
     const prof = state.profiles[state.activeProfileId];
-    kwTableBody.innerHTML = '';
+    kwTableBody.replaceChildren();
     prof.items.forEach((it, idx) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><input data-idx="${idx}" class="kw-key" value="${escapeHtml(it.k)}"></td>
-                    <td><input data-idx="${idx}" class="kw-val" value="${escapeHtml(it.v)}"></td>
-                    <td class="actions">
-                      <button class="btn btn-xs btn-secondary save-row" data-idx="${idx}">Save</button>
-                      <button class="btn btn-xs btn-danger del-row" data-idx="${idx}">Del</button>
-                    </td>`;
+
+        const keyCell = document.createElement('td');
+        const keyInput = document.createElement('input');
+        keyInput.dataset.idx = String(idx);
+        keyInput.className = 'kw-key';
+        keyInput.value = it.k || '';
+        keyCell.appendChild(keyInput);
+
+        const valueCell = document.createElement('td');
+        const valueInput = document.createElement('input');
+        valueInput.dataset.idx = String(idx);
+        valueInput.className = 'kw-val';
+        valueInput.value = it.v || '';
+        valueCell.appendChild(valueInput);
+
+        const actionCell = document.createElement('td');
+        actionCell.className = 'actions';
+
+        const saveButton = document.createElement('button');
+        saveButton.type = 'button';
+        saveButton.className = 'btn btn-xs btn-secondary save-row';
+        saveButton.dataset.idx = String(idx);
+        saveButton.textContent = 'Save';
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'btn btn-xs btn-danger del-row';
+        deleteButton.dataset.idx = String(idx);
+        deleteButton.textContent = 'Del';
+
+        actionCell.append(saveButton, deleteButton);
+        tr.append(keyCell, valueCell, actionCell);
         kwTableBody.appendChild(tr);
     });
 }
@@ -235,8 +261,22 @@ document.addEventListener('keydown', (e) => {
 
 document.getElementById('previewBtn').addEventListener('click', () => {
     const modal = document.createElement('div');
-    modal.style = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);';
-    modal.innerHTML = '<div style="background: white; padding: 20px;">Preview: Điền email vào field email...</div>';
+    Object.assign(modal.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        background: 'rgba(0,0,0,0.5)'
+    });
+
+    const modalContent = document.createElement('div');
+    Object.assign(modalContent.style, {
+        background: 'white',
+        padding: '20px'
+    });
+    modalContent.textContent = 'Preview: Điền email vào field email...';
+    modal.appendChild(modalContent);
     document.body.appendChild(modal);
     modal.addEventListener('click', () => modal.remove());
 });
@@ -247,7 +287,4 @@ chrome.storage.local.get(['onboarded'], res => {
         chrome.storage.local.set({ onboarded: true });
     }
 });
-// helper: escape for input value injection
-function escapeHtml(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;'); }
-
 document.addEventListener('DOMContentLoaded', loadState);
