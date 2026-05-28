@@ -5,9 +5,7 @@
     "description": "Fill forms using user-defined keywords and profiles.",
     "author": "Luu Chi Khanh(Poi)",
     "permissions": [
-        "storage",
-        "activeTab",
-        "scripting"
+        "storage"
     ],
     "host_permissions": [
         "<all_urls>"
