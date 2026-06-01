@@ -34,6 +34,12 @@
 4. Nhấn **"Fill current tab"** để điền dữ liệu vào trang web đang mở.
 5. Bật tùy chọn **Auto-Fill** nếu bạn muốn tiện ích tự chạy khi tải trang.
 
+### Điền lựa chọn trong form khảo sát
+- Với ô nhập thông thường: dùng tên field làm keyword, ví dụ `email` -> `a@b.com`.
+- Với radio: extension tự chọn đáp án đầu tiên khả dụng của mỗi nhóm ngay cả khi không có keyword. Hỗ trợ cả radio HTML thông thường và radio tùy biến như Google Forms. Nếu muốn chọn đáp án cụ thể, dùng nội dung câu hỏi làm keyword và nội dung lựa chọn hiển thị làm value, ví dụ `Bạn thuộc nhóm tuổi nào?` -> `23 - 30 tuổi`.
+- Với checkbox: dùng nội dung câu hỏi làm keyword và nội dung lựa chọn hiển thị làm value.
+- Với select: value có thể là mã HTML hoặc nội dung lựa chọn hiển thị, ví dụ `Trình độ` -> `Đại học`.
+
 ## 📥 Nhập/Xuất dữ liệu
 - **Xuất (Export):** Tạo file `kff_export.json` chứa toàn bộ cấu hình của bạn.
 - **Nhập (Import):** Hỗ trợ tệp JSON có cấu hình tương thích để cập nhật danh sách profile.

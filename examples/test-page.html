@@ -10,8 +10,43 @@
         <input id="email" name="email" placeholder="your@mail.com" /><br /><br />
         <label for="phone">Phone</label>
         <input id="phone" name="phone" placeholder="phone" /><br /><br />
+        <section class="survey-question">
+            <strong>1. Bạn thuộc nhóm tuổi nào?</strong><br /><br />
+            <label><input type="radio" name="age_group" value="under_18" /> Dưới 18 tuổi</label><br /><br />
+            <label><input type="radio" name="age_group" value="18_22" /> 18 - 22 tuổi</label><br /><br />
+            <label><input type="radio" name="age_group" value="23_30" /> 23 - 30 tuổi</label><br /><br />
+            <label><input type="radio" name="age_group" value="over_30" /> Trên 30 tuổi</label><br /><br />
+        </section>
+        <label><input id="newsletter" type="checkbox" name="newsletter" /> Nhận bản tin</label><br /><br />
+        <label for="education">Trình độ</label>
+        <select id="education" name="education">
+            <option value="">Chọn trình độ</option>
+            <option value="high_school">Trung học</option>
+            <option value="university">Đại học</option>
+        </select><br /><br />
+        <section>
+            <strong>2. Hình thức học?</strong><br /><br />
+            <div role="radiogroup" aria-label="Hình thức học">
+                <button type="button" role="radio" aria-checked="false" aria-disabled="true"
+                    data-value="offline">Trực tiếp</button>
+                <button type="button" role="radio" aria-checked="false" data-value="online">Trực tuyến</button>
+            </div>
+        </section><br />
         <button type="submit">Submit</button>
     </form>
+
+    <script>
+        document.querySelectorAll('[role="radiogroup"]').forEach(group => {
+            group.querySelectorAll('[role="radio"]').forEach(radio => {
+                radio.addEventListener('click', () => {
+                    if (radio.getAttribute('aria-disabled') === 'true') return;
+                    group.querySelectorAll('[role="radio"]').forEach(option => {
+                        option.setAttribute('aria-checked', String(option === radio));
+                    });
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

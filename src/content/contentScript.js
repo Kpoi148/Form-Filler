@@ -6,8 +6,8 @@
                 const state = res.kff_state || {};
                 const profile = state.profiles && state.profiles[msg.profileId];
                 if (profile) {
-                    fillUsingItems(profile.items);
-                    sendResponse({ ok: true });
+                    const filledCount = fillUsingItems(profile.items);
+                    sendResponse({ ok: true, filledCount });
                 } else sendResponse({ ok: false, reason: 'no-profile' });
             });
             // return true to indicate async response
@@ -16,65 +16,156 @@
     });
 
     // optional: auto-fill option
-    chrome.storage.local.get(['kff_state'], res => {
-        const st = res.kff_state || {};
-        if (st.autoFill && st.activeProfileId && st.profiles && st.profiles[st.activeProfileId]) {
-            fillUsingItems(st.profiles[st.activeProfileId].items);
-        }
-    });
+    fillActiveProfileIfEnabled();
 
     // core fill function
     function fillUsingItems(items) {
-        if (!Array.isArray(items) || items.length === 0) return;
-        const nodes = Array.from(document.querySelectorAll('input, textarea, select'));
-        items.forEach(item => {
-            const key = (item.k || '').toLowerCase();
-            const val = item.v || '';
+        const nodes = Array.from(document.querySelectorAll('input, textarea, select, [role="radio"], [role="checkbox"]'));
+        const safeItems = Array.isArray(items) ? items : [];
+        let filledCount = 0;
+        safeItems.forEach(item => {
+            const key = normalizeText(item.k || '');
+            const val = item.v == null ? '' : String(item.v);
             nodes.forEach(node => {
                 if (matchesKeyword(node, key) && canFillNode(node)) {
-                    chrome.storage.local.get(['debugMode'], res => {
-                        const debug = res.debugMode || false;
-                        if (debug) console.debug('Matched node:', node, 'with key:', key, 'val: [hidden]');
-                    });
                     try {
-                        if (node.tagName.toLowerCase() === 'select') {
-                            node.value = val;
-                            node.dispatchEvent(new Event('change', { bubbles: true }));
-                        } else if (node.type === 'checkbox' || node.type === 'radio') {
-                            // checkbox/radio: set checked if value matches or if val truthy
-                            if (val === '' || val === null) {
-                                node.checked = true;
-                            } else {
-                                if (node.value && node.value.toLowerCase() === val.toLowerCase()) node.checked = true;
-                            }
-                            node.dispatchEvent(new Event('change', { bubbles: true }));
-                        } else if (node.type === 'date') {
-                            const date = new Date(val);
-                            if (!Number.isNaN(date.getTime())) {
-                                node.valueAsDate = date;
-                                node.dispatchEvent(new Event('input', { bubbles: true }));
-                                node.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        } else {
-                            node.focus();
-                            node.value = val;
-                            node.dispatchEvent(new Event('input', { bubbles: true }));
-                            node.dispatchEvent(new Event('change', { bubbles: true }));
+                        if (fillNode(node, key, val)) {
+                            filledCount += 1;
+                            chrome.storage.local.get(['debugMode'], res => {
+                                const debug = res.debugMode || false;
+                                if (debug) console.debug('Matched node:', node, 'with key:', key, 'val: [hidden]');
+                            });
                         }
                     } catch (e) { console.warn('fill error', e); }
                 }
             });
         });
+        filledCount += fillUnselectedRadioGroups(nodes);
+        return filledCount;
+    }
+
+    function fillNode(node, key, val) {
+        if (node.tagName.toLowerCase() === 'select') {
+            return fillSelect(node, val);
+        }
+
+        if (isChoiceNode(node)) {
+            return fillChoice(node, key, val);
+        }
+
+        if (node.type === 'date') {
+            const date = new Date(val);
+            if (Number.isNaN(date.getTime())) return false;
+
+            node.valueAsDate = date;
+            dispatchInputAndChange(node);
+            return true;
+        }
+
+        node.focus();
+        node.value = val;
+        dispatchInputAndChange(node);
+        return true;
+    }
+
+    function fillSelect(node, val) {
+        const target = normalizeText(val);
+        if (!target) return false;
+
+        const option = Array.from(node.options).find(item => {
+            return normalizeText(item.value) === target || normalizeText(item.textContent) === target;
+        });
+        if (!option) return false;
+
+        node.value = option.value;
+        dispatchInputAndChange(node);
+        return true;
+    }
+
+    function fillChoice(node, key, val) {
+        const target = normalizeText(val);
+        if (!target) return false;
+
+        const isBooleanCheckbox = isCheckboxNode(node)
+            && ['1', 'true', 'yes', 'on', 'checked', 'có', 'co'].includes(target)
+            && matchesKeyword(node, key, { includeGroupContext: false });
+
+        if (!isBooleanCheckbox && !getChoiceValueTexts(node).some(text => normalizeText(text) === target)) {
+            return false;
+        }
+
+        node.click();
+        return true;
+    }
+
+    function dispatchInputAndChange(node) {
+        node.dispatchEvent(new Event('input', { bubbles: true }));
+        node.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function fillUnselectedRadioGroups(nodes) {
+        const radios = nodes.filter(isRadioNode);
+        const handled = new Set();
+        let filledCount = 0;
+
+        radios.forEach(node => {
+            if (handled.has(node)) return;
+
+            const group = radios.filter(candidate => isSameRadioGroup(candidate, node));
+            group.forEach(candidate => handled.add(candidate));
+            if (group.some(isNodeChecked)) return;
+
+            const firstAvailable = group.find(isNodeAvailable);
+            if (firstAvailable) {
+                firstAvailable.click();
+                filledCount += 1;
+            }
+        });
+
+        return filledCount;
+    }
+
+    function isSameRadioGroup(candidate, node) {
+        const nodeGroup = node.closest('[role="radiogroup"]');
+        if (nodeGroup) return candidate.closest('[role="radiogroup"]') === nodeGroup;
+
+        if (candidate.form !== node.form) return false;
+        if (!node.name) return candidate === node;
+        return candidate.name === node.name;
     }
 
     function canFillNode(node) {
-        if (node.disabled || node.readOnly) return false;
+        if (!isNodeAvailable(node)) return false;
 
-        if (node.type === 'checkbox' || node.type === 'radio') {
-            return !node.checked;
+        if (isChoiceNode(node)) {
+            return !isNodeChecked(node);
         }
 
         return !node.value || node.value.trim() === '';
+    }
+
+    function isNodeAvailable(node) {
+        return !node.disabled && !node.readOnly && node.getAttribute('aria-disabled') !== 'true';
+    }
+
+    function isNodeChecked(node) {
+        return node.checked === true || node.getAttribute('aria-checked') === 'true';
+    }
+
+    function getChoiceType(node) {
+        return node.getAttribute('role') || node.type || '';
+    }
+
+    function isRadioNode(node) {
+        return getChoiceType(node) === 'radio';
+    }
+
+    function isCheckboxNode(node) {
+        return getChoiceType(node) === 'checkbox';
+    }
+
+    function isChoiceNode(node) {
+        return isRadioNode(node) || isCheckboxNode(node);
     }
 
     function escapeRegExp(value) {
@@ -89,7 +180,94 @@
         return value.replace(/["\\]/g, '\\$&');
     }
 
-    function matchesKeyword(node, keyword) {
+    function normalizeText(value) {
+        return String(value)
+            .normalize('NFKC')
+            .toLowerCase()
+            .replace(/[‐‑‒–—―]/g, '-')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function containsKeyword(text, keyword) {
+        const normalizedText = normalizeText(text);
+        const normalizedKeyword = normalizeText(keyword);
+        if (!normalizedKeyword) return false;
+
+        return new RegExp(
+            '(^|[^\\p{L}\\p{N}_])' + escapeRegExp(normalizedKeyword) + '(?=$|[^\\p{L}\\p{N}_])',
+            'iu'
+        ).test(normalizedText);
+    }
+
+    function getLabelTexts(node) {
+        const texts = [];
+        const id = node.id;
+        if (id) {
+            const lab = document.querySelector('label[for="' + escapeCssIdentifier(id) + '"]');
+            if (lab) texts.push(lab.innerText);
+        }
+
+        const parentLabel = node.closest('label');
+        if (parentLabel) texts.push(parentLabel.innerText);
+        return texts;
+    }
+
+    function isSameChoiceGroup(candidate, node) {
+        if (getChoiceType(candidate) !== getChoiceType(node)) return false;
+        const nodeGroup = node.closest('[role="radiogroup"]');
+        if (nodeGroup) return candidate.closest('[role="radiogroup"]') === nodeGroup;
+        if (node.name) return candidate.name === node.name;
+        return candidate === node;
+    }
+
+    function getChoiceGroupTexts(node) {
+        const texts = [];
+        const fieldset = node.closest('fieldset');
+        const legend = fieldset && fieldset.querySelector(':scope > legend');
+        if (legend) texts.push(legend.innerText);
+
+        let root = node.parentElement;
+        while (root && root !== document.body && root !== document.documentElement) {
+            const sameGroup = Array.from(root.querySelectorAll(
+                'input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="radio"]'
+            ))
+                .filter(candidate => isSameChoiceGroup(candidate, node));
+            if (sameGroup.length > 1) break;
+            root = root.parentElement;
+        }
+
+        if (!root || root === document.body || root === document.documentElement) return texts;
+        texts.push(root.innerText);
+
+        let parent = root.parentElement;
+        let depth = 0;
+        while (parent && parent !== document.body && parent !== document.documentElement && parent.tagName !== 'FORM' && depth < 2) {
+            const hasOtherFields = Array.from(parent.querySelectorAll('input, textarea, select'))
+                .some(candidate => !isSameChoiceGroup(candidate, node));
+            if (hasOtherFields) break;
+
+            texts.push(parent.innerText);
+            parent = parent.parentElement;
+            depth += 1;
+        }
+
+        return texts;
+    }
+
+    function getChoiceValueTexts(node) {
+        const texts = [
+            node.value,
+            node.getAttribute('aria-label'),
+            node.getAttribute('data-label'),
+            node.getAttribute('data-value'),
+            node.innerText
+        ];
+        texts.push(...getLabelTexts(node));
+        return texts.filter(Boolean);
+    }
+
+    function matchesKeyword(node, keyword, options = {}) {
         if (!keyword) return false;
         const attrs = [];
         if (node.name) attrs.push(node.name);
@@ -99,35 +277,28 @@
         if (node.className) attrs.push(String(node.className));
         // label text:
         try {
-            const id = node.id;
-            if (id) {
-                const lab = document.querySelector('label[for="' + escapeCssIdentifier(id) + '"]');
-                if (lab) attrs.push(lab.innerText);
+            attrs.push(...getLabelTexts(node));
+            if (isChoiceNode(node) && options.includeGroupContext !== false) {
+                attrs.push(...getChoiceGroupTexts(node));
             }
-            // also check parent label
-            const pl = node.closest('label');
-            if (pl) attrs.push(pl.innerText);
         } catch (e) { }
         // combine and check
-        const combined = attrs.join(' ').toLowerCase();
-        return new RegExp('\\b' + escapeRegExp(keyword.toLowerCase()) + '\\b', 'i').test(combined);  // Word boundary cho strict match
+        return containsKeyword(attrs.join(' '), keyword);
+    }
+
+    function fillActiveProfileIfEnabled() {
+        chrome.storage.local.get(['kff_state'], res => {
+            const st = res.kff_state || {};
+            if (st.autoFill && st.activeProfileId && st.profiles && st.profiles[st.activeProfileId]) {
+                fillUsingItems(st.profiles[st.activeProfileId].items);
+            }
+        });
     }
 
     // optional: observe DOM changes for SPAs and fill when new forms appear (respect auto-fill)
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => {
-        const mo = new MutationObserver((mutations) => {
-            // simple debounce
-            if (window.__kff_mo_timeout) clearTimeout(window.__kff_mo_timeout);
-            window.__kff_mo_timeout = setTimeout(() => {
-                chrome.storage.local.get(['kff_state'], res => {
-                    const st = res.kff_state || {};
-                    if (st.autoFill && st.activeProfileId && st.profiles && st.profiles[st.activeProfileId]) {
-                        fillUsingItems(st.profiles[st.activeProfileId].items);
-                    }
-                });
-            }, 500);  // Tăng debounce lên 500ms
-        });
-        mo.observe(form, { childList: true, subtree: true });
+    const mo = new MutationObserver(() => {
+        if (window.__kff_mo_timeout) clearTimeout(window.__kff_mo_timeout);
+        window.__kff_mo_timeout = setTimeout(fillActiveProfileIfEnabled, 500);
     });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
 })();

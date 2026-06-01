@@ -277,13 +277,20 @@ deleteProfileBtn.addEventListener('click', () => {
 fillBtn.addEventListener('click', () => {
     // send message to active tab
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-        if (!tabs[0]) return;
+        if (!tabs[0]) {
+            showStatus('Không tìm thấy tab đang mở.');
+            return;
+        }
         chrome.tabs.sendMessage(tabs[0].id, { action: 'fill', profileId: state.activeProfileId }, (resp) => {
             if (chrome.runtime.lastError) {
                 console.error('Send message error:', chrome.runtime.lastError.message);
                 showStatus('Không thể gửi message. Kiểm tra xem tab có load content script không.');
+            } else if (!resp || !resp.ok) {
+                showStatus('Không thể điền: profile không hợp lệ.');
+            } else if (resp.filledCount > 0) {
+                showStatus(`Đã điền ${resp.filledCount} trường.`);
             } else {
-                showStatus('Đã gửi lệnh điền.');
+                showStatus('Không tìm thấy trường phù hợp để điền.');
             }
         });
     });
