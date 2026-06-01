@@ -20,8 +20,8 @@ Github: Kpoi148
     --shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
     --radius: 16px;
     --transition: 180ms ease;
-    --popup-width: 420px;
-    --popup-max-height: 640px;
+    --popup-width: 440px;
+    --popup-max-height: 600px;
 }
 
 * {
@@ -241,8 +241,13 @@ h2 {
     color: var(--muted);
 }
 
+#kwTable th:last-child {
+    width: 112px;
+}
+
 #kwTable input {
     width: 100%;
+    min-width: 0;
     padding: 6px 8px;
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -481,11 +486,7 @@ select:focus {
 }
 
 @media (max-width: 360px) {
-    html,
     body {
-        width: 100%;
-        min-width: 0;
-        max-width: none;
         padding: 12px;
     }
 
@@ -500,6 +501,40 @@ select:focus {
 
     .profile-actions .btn {
         flex: 1 1 100%;
+    }
+
+    #kwTable thead {
+        display: none;
+    }
+
+    #kwTable,
+    #kwTable tbody,
+    #kwTable tr,
+    #kwTable td {
+        display: block;
+        width: 100%;
+    }
+
+    #kwTable tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px;
+        border-top: 1px solid var(--border);
+    }
+
+    #kwTable td {
+        border-top: 0;
+        padding: 0;
+    }
+
+    #kwTable .actions {
+        display: flex;
+        grid-column: 1 / -1;
+    }
+
+    #kwTable .actions .btn {
+        flex: 1;
     }
 }
 
