@@ -41,6 +41,7 @@
             });
         });
         filledCount += fillUnselectedRadioGroups(nodes);
+        filledCount += fillUnselectedCheckboxGroups(nodes);
         return filledCount;
     }
 
@@ -134,6 +135,52 @@
         return candidate.name === node.name;
     }
 
+    function fillUnselectedCheckboxGroups(nodes) {
+        const checkboxes = nodes.filter(isCheckboxNode);
+        const handled = new Set();
+        let filledCount = 0;
+
+        checkboxes.forEach(node => {
+            if (handled.has(node)) return;
+
+            const group = checkboxes.filter(candidate => isSameCheckboxGroup(candidate, node));
+            group.forEach(candidate => handled.add(candidate));
+            if (group.length < 2 || group.some(isNodeChecked)) return;
+
+            const firstAvailable = group.find(isNodeAvailable);
+            if (firstAvailable) {
+                firstAvailable.click();
+                filledCount += 1;
+            }
+        });
+
+        return filledCount;
+    }
+
+    function isSameCheckboxGroup(candidate, node) {
+        const nodeGroup = getCheckboxGroupRoot(node);
+        const candidateGroup = getCheckboxGroupRoot(candidate);
+        if (nodeGroup || candidateGroup) return candidateGroup === nodeGroup;
+
+        if (candidate.form !== node.form) return false;
+        if (!node.name) return candidate === node;
+        return candidate.name === node.name;
+    }
+
+    function getCheckboxGroupRoot(node) {
+        const explicitGroup = node.closest('[role="group"], fieldset');
+        if (explicitGroup) return explicitGroup;
+
+        let root = node.parentElement;
+        while (root && root !== document.body && root !== document.documentElement && root.tagName !== 'FORM') {
+            const checkboxes = Array.from(root.querySelectorAll('input[type="checkbox"], [role="checkbox"]'));
+            if (checkboxes.length > 1) return root;
+            root = root.parentElement;
+        }
+
+        return null;
+    }
+
     function canFillNode(node) {
         if (!isNodeAvailable(node)) return false;
 
@@ -217,6 +264,7 @@
         if (getChoiceType(candidate) !== getChoiceType(node)) return false;
         const nodeGroup = node.closest('[role="radiogroup"]');
         if (nodeGroup) return candidate.closest('[role="radiogroup"]') === nodeGroup;
+        if (isCheckboxNode(node)) return isSameCheckboxGroup(candidate, node);
         if (node.name) return candidate.name === node.name;
         return candidate === node;
     }
@@ -261,6 +309,7 @@
             node.getAttribute('aria-label'),
             node.getAttribute('data-label'),
             node.getAttribute('data-value'),
+            node.getAttribute('data-answer-value'),
             node.innerText
         ];
         texts.push(...getLabelTexts(node));

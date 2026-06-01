@@ -32,6 +32,22 @@
                 <button type="button" role="radio" aria-checked="false" data-value="online">Trực tuyến</button>
             </div>
         </section><br />
+        <section>
+            <strong>3. Chủ đề yêu thích?</strong><br /><br />
+            <label><input type="checkbox" name="favorite_topics" value="technology" /> Công nghệ</label>
+            <label><input type="checkbox" name="favorite_topics" value="education" /> Giáo dục</label>
+        </section><br />
+        <section>
+            <strong>4. Yếu tố phim hoạt hình?</strong><br /><br />
+            <div role="group" aria-label="Yếu tố phim hoạt hình">
+                <button type="button" role="checkbox" aria-checked="false" aria-disabled="true"
+                    data-answer-value="plot">Cốt truyện cảm động</button>
+                <button type="button" role="checkbox" aria-checked="false"
+                    data-answer-value="character">Nhân vật dễ đồng cảm</button>
+                <button type="button" role="checkbox" aria-checked="false"
+                    data-answer-value="visual">Hình ảnh đẹp</button>
+            </div>
+        </section><br />
         <button type="submit">Submit</button>
     </form>
 
@@ -43,6 +59,15 @@
                     group.querySelectorAll('[role="radio"]').forEach(option => {
                         option.setAttribute('aria-checked', String(option === radio));
                     });
+                });
+            });
+        });
+
+        document.querySelectorAll('[role="group"]').forEach(group => {
+            group.querySelectorAll('[role="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('click', () => {
+                    if (checkbox.getAttribute('aria-disabled') === 'true') return;
+                    checkbox.setAttribute('aria-checked', String(checkbox.getAttribute('aria-checked') !== 'true'));
                 });
             });
         });
